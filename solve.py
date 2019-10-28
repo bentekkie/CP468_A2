@@ -44,11 +44,9 @@ class CSP(Generic[T, S]):
             return False
         if self.solved():
             return True
-        d = [x for x in filter(lambda k: len(k[1]) >1,self.domains.items())]
-        print(d)
-        k = min(d,key=lambda k: len(k[1]))
-        print(k)
-        var = k[0]
+        d = min(filter(lambda k: len(k[1]) >1,self.domains.items()),key=lambda k: len(k[1]))
+#        print(k)
+        var = d[0]
         for value in self.domains[var]:
             newCsp = deepcopy(self)
             newCsp.domains[var] = {value}
@@ -71,11 +69,15 @@ with args.sudokufile as f:
 domains = {(i,j):{data[j][i]} if data[j][i] != 0 else set(range(1,10)) for i in range(9) for j in range(9)}
 adjList = {x:{y for y in domains if x is not y and related(x,y)} for x in domains}
 csp = CSP(domains,adjList)
+csp.backtrack()
+'''
 print(csp.ac3())
 print(csp.solved())
 for x in range(9):
     print(" ".join(str(next(iter(csp.domains[(y,x)]))) for y in range(9)))
 print(csp.backtrack())
 print(csp.solved())
+'''
+
 for x in range(9):
     print(" ".join(str(next(iter(csp.domains[(y,x)]))) for y in range(9)))
