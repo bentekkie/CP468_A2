@@ -31,11 +31,13 @@ class CSP(Generic[T, S]):
             related: Callable[[T, T], bool],
             constraint: Callable[[S, S], bool]):
         self.domains = domains
+        #Initialize graph of all arcs between related nodes
         self.adj_list = {
             x: {y for y in domains if x is not y and related(x, y)}
             for x in domains}
         self.constraint = constraint
-
+    
+    # Perform the revise operation on a pair of variables to enforce arc consistency
     def revise(self, x_var: T, y_var: T) -> bool:
         new_domain = {vx for vx in self.domains[x_var] if any(
             True for vy in self.domains[y_var] if self.constraint(vx, vy))}
@@ -43,32 +45,39 @@ class CSP(Generic[T, S]):
         self.domains[x_var] = new_domain
         return change
 
+    # Check if all variables have domains with exactly 1 value
     def solved(self) -> bool:
         return all(len(values) == 1 for values in self.domains.values())
 
+    # Perform the arc reduction ac3 algorithm on this CSP
     def ac3(self) -> Tuple[bool, List[int]]:
         q: Queue[Tuple[T,T]] = Queue()
         counts: List[int] = []
+        # Initialize work queue with all arcs
         for x in self.adj_list:
             for y in self.adj_list[x]:
                 q.put((x, y))
+        # Keep processing till queue is empty
         while not q.empty():
             counts.append(q.qsize())
             i, j = q.get()
+            # Perform the revise operation for an arc. If the domain changes, add all incoming arcs to queue
             if self.revise(i, j):
+                # If a variable has no valid values, then there is no solution
                 if len(self.domains[i]) == 0:
                     return False, counts
                 for k in self.adj_list[i] - {j}:
                     q.put((k, i))
         return True, counts
 
+    # Perform the backtracking operation on this CSP
     def backtrack(self) -> bool:
         # Ensure that the csp is arc consistent before backtracking begins
         if not self.ac3()[0]:
             return False
         if self.solved():  # Short circuit if the puzzle is already solved
             return True
-        # most remaining values heuristic
+        # minimum remaining values heuristic
         mrv_var = min(
             ((k, len(v)) for k, v in self.domains.items() if len(v) > 1),
             key=lambda k: k[1])[0]
